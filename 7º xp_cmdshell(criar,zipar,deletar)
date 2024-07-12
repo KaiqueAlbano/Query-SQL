@@ -1,0 +1,38 @@
+
+
+/****************************************************************************************************************
+GERAR ARQUIVO. 
+*****************************************************************************************************************/
+declare @dtLog_inicio   datetime     = '2023-08-01 00:00:00.000',             
+        @dtLog_fim     datetime      = '2023-08-01 23:59:59.998'
+declare @nomearquivo  varchar(50) = concat('tblAcessLog_'
+                                            ,year(@dtLog_inicio)
+                                            ,concat(replicate ('0', 2 - len(month(@dtLog_inicio))),month(@dtLog_inicio))
+                                            ,concat(replicate ('0', 2 - len(day(@dtLog_inicio))) , day(@dtLog_inicio)))
+declare @comando      nvarchar(max)
+declare @query        nvarchar(max) = concat('exec db_GlobalOne_Servico.[VED].[SPR_EXE_RETORNO_ARQUIVOTXT] @dtLog_inicio=''''',convert(varchar,@dtLog_inicio,120),''''' ,@dtLog_fim=''''',convert(varchar,@dtLog_fim,120),'''''')
+set @comando = 'exec xp_cmdshell ''bcp "' + @query + '"  queryout "E:\VED_ACESSLOG\' +@nomearquivo+'.txt" -T -c -C1252 -t,'''
+exec sp_executesql @comando
+/****************************************************************************************************************
+ZIPAR
+*****************************************************************************************************************/
+-- Definir variáveis
+DECLARE @arquivoOrigem  NVARCHAR(255) = 'E:\VED_ACESSLOG\' +@nomearquivo+'.txt'; -- Caminho completo do arquivo de origem
+DECLARE @arquivoDestino NVARCHAR(255) = 'E:\VED_ACESSLOG\' +@nomearquivo+'.zip'; -- Caminho completo do arquivo zip de destino
+set @comando = 'EXEC master.dbo.xp_cmdshell ''""C:\Program Files\7-Zip\7z.exe" a "' + @arquivoDestino + '" "' + @arquivoOrigem + '""'''
+exec sp_executesql @comando
+/****************************************************************************************************************
+DELETAR
+*****************************************************************************************************************/
+EXEC dbo.ExcluirArquivo @arquivoOrigem;
+
+-- CREATE PROCEDURE dbo.ExcluirArquivo (@arquivo_completo NVARCHAR(4000))
+-- AS
+-- BEGIN
+--   DECLARE @comando NVARCHAR(4000);
+--   SET @comando = 'DEL "' + @arquivo_completo + '"';
+--   -- Verify if xp_cmdshell is enabled (optional, comment out if not needed)
+--   -- EXEC sp_configure 'xp_cmdshell', 1;
+--   -- RECONFIGURE;
+--   EXEC master.dbo.xp_cmdshell @comando;
+-- END;
